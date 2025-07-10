@@ -1,3 +1,4 @@
+app.use(cors());
 const express = require("express");
 const askGemini = require("./puppeteer-gemini");
 const app = express();
