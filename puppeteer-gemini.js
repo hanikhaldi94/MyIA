@@ -1,3 +1,4 @@
+// puppeteer-gemini.js
 const puppeteer = require("puppeteer");
 
 let browser;
@@ -5,9 +6,9 @@ let browser;
 async function initializeBrowser() {
   if (!browser) {
     browser = await puppeteer.launch({
-      headless: false,
-      userDataDir: "./user-data",
-      executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      headless: "new",
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: process.env.CHROME_EXECUTABLE_PATH || puppeteer.executablePath()
     });
   }
   return browser;
