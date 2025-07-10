@@ -1,7 +1,7 @@
 const express = require("express");
 const askGemini = require("./puppeteer-gemini");
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // ✅ ضروري لـ Render
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -17,7 +17,7 @@ async function processQueue() {
   processing = true;
   const { question, res } = queue.shift();
 
-  console.log("🤖 سؤال جديد:", question);
+  console.log("✅ سؤال جديد:", question);
 
   try {
     const answer = await askGemini(question);
@@ -28,17 +28,17 @@ async function processQueue() {
   }
 
   processing = false;
-  processQueue(); // تابع السؤال التالي في الصف
+  processQueue(); // معالجة السؤال التالي
 }
 
-app.post("/ask", async (req, res) => {
+app.post("/ask", (req, res) => {
   const question = req.body.question;
   if (!question) {
     return res.json({ answer: "❌ لا يوجد سؤال." });
   }
 
   queue.push({ question, res });
-  processQueue(); // شغّل المعالجة إذا كانت متوقفة
+  processQueue(); // بدء المعالجة إذا لم تكن تعمل
 });
 
 app.listen(port, () => {
