@@ -1,6 +1,6 @@
 FROM node:18-slim
 
-# تثبيت المتطلبات الأساسية + أدوات الرسوميات + Chrome
+# تثبيت. المتطلبات الأساسية + أدوات الرسوميات + Chrome
 RUN apt update && apt install -y \
     wget gnupg2 curl ca-certificates fonts-liberation \
     libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
