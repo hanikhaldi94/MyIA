@@ -1,28 +1,29 @@
 FROM node:18-slim
 
-# تحديث النظام وتثبيت المتطلبات الأساسية + Chrome + VNC + Fluxbox + أدوات رسومية
+# تثبيت المتطلبات الأساسية + أدوات الرسوميات + Chrome
 RUN apt update && apt install -y \
-  wget gnupg2 curl ca-certificates fonts-liberation \
-  libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
-  libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
-  libxdamage1 libxrandr2 xdg-utils unzip chromium chromium-driver \
-  xvfb x11vnc fluxbox git tightvncserver
+    wget gnupg2 curl ca-certificates fonts-liberation \
+    libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
+    libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
+    libxdamage1 libxrandr2 xdg-utils unzip chromium chromium-driver \
+    xvfb x11vnc fluxbox git
 
-# إنشاء مجلد العمل
+# تثبيت noVNC
 WORKDIR /opt
-
-# تثبيت noVNC و Websockify
 RUN git clone https://github.com/novnc/noVNC.git && \
     git clone https://github.com/novnc/websockify noVNC/utils/websockify
 
-# إعداد xstartup لـ VNC (لتشغيل Fluxbox مع الواجهة)
-RUN mkdir -p ~/.vnc && \
-    echo "#!/bin/sh\nstartfluxbox &" > ~/.vnc/xstartup && \
-    chmod +x ~/.vnc/xstartup
+# إعداد السكربت الذي يشغل البيئة الرسومية
+RUN echo '#!/bin/bash\n\
+Xvfb :1 -screen 0 1280x800x24 &\n\
+export DISPLAY=:1\n\
+fluxbox &\n\
+x11vnc -display :1 -forever -nopw -shared -bg -rfbport 5901\n\
+/opt/noVNC/utils/launch.sh --vnc localhost:5901 --listen 8080\n' > /start.sh && \
+    chmod +x /start.sh
 
-# فتح المنفذ الذي يعمل عليه noVNC
+# فتح المنفذ
 EXPOSE 8080
 
-# أمر التشغيل: يبدأ VNC server ثم يربطه مع noVNC ويُشغّل واجهة رسومية
-CMD bash -c "tightvncserver :1 -geometry 1280x800 -depth 24 && \
-             /opt/noVNC/utils/launch.sh --vnc localhost:5901 --listen 8080"
+# تشغيل كل شيء
+CMD ["/start.sh"]
