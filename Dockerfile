@@ -24,5 +24,5 @@ RUN mkdir -p ~/.vnc && \
 EXPOSE 8080
 
 # أمر التشغيل: يبدأ VNC server ثم يربطه مع noVNC ويُشغّل واجهة رسومية
-CMD bash -c "vncserver :1 -geometry 1280x800 -depth 24 && \
+CMD bash -c "tightvncserver :1 -geometry 1280x800 -depth 24 && \
              /opt/noVNC/utils/launch.sh --vnc localhost:5901 --listen 8080"
