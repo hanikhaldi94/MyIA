@@ -1,65 +1,25 @@
-const puppeteer = require("puppeteer");
+FROM node:18-slim
 
-let browser;
+# تثبيت المتطلبات
+RUN apt update && apt install -y \
+    wget gnupg2 curl ca-certificates fonts-liberation \
+    libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
+    libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
+    libxdamage1 libxrandr2 xdg-utils unzip chromium chromium-driver xvfb \
+    x11vnc fluxbox git tightvncserver
 
-async function initializeBrowser() {
-  if (!browser) {
-    browser = await puppeteer.launch({
-      headless: false, // يجب أن تكون false لعرض الواجهة أول مرة
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      userDataDir: './user-data' // حفظ جلسة تسجيل الدخول
-    });
-  }
-  return browser;
-}
+# تثبيت noVNC
+WORKDIR /opt
+RUN git clone https://github.com/novnc/noVNC.git && \
+    git clone https://github.com/novnc/websockify noVNC/utils/websockify
 
-async function askGemini(question) {
-  const browser = await initializeBrowser();
-  const page = await browser.newPage();
+# إعداد VNC
+RUN mkdir -p ~/.vnc && \
+    echo "#!/bin/sh\nstartfluxbox &" > ~/.vnc/xstartup && \
+    chmod +x ~/.vnc/xstartup
 
-  try {
-    console.log("🔍 Navigating to Gemini...");
-    await page.goto("https://gemini.google.com/app", { waitUntil: "domcontentloaded" });
+EXPOSE 8080
 
-    console.log("⏳ Waiting for textarea...");
-    await page.waitForSelector("div.ql-editor.textarea", { visible: true });
-
-    console.log("✏️ Typing question...");
-    await page.type("div.ql-editor.textarea", question);
-
-    console.log("📤 Clicking send...");
-    await page.waitForSelector("button.send-button", { visible: true });
-    await page.click("button.send-button");
-
-    let lastReply = "";
-    let stableCount = 0;
-
-    console.log("⏳ Waiting for response...");
-    for (let i = 0; i < 30; i++) {
-      const current = await page.evaluate(() => {
-        const el = document.querySelector("div.markdown.markdown-main-panel");
-        return el?.innerText?.trim() || "";
-      });
-
-      if (current === lastReply) {
-        stableCount++;
-      } else {
-        stableCount = 0;
-        lastReply = current;
-      }
-
-      if (stableCount >= 3 && lastReply.length > 20) break;
-      await new Promise(res => setTimeout(res, 1000));
-    }
-
-    console.log("✅ Response captured");
-    return lastReply || "❌ لم يتم العثور على رد.";
-  } catch (error) {
-    console.error("❌ تفصيل الخطأ:", error);
-    return "❌ حدث خطأ أثناء سؤال Gemini.";
-  } finally {
-    await page.close();
-  }
-}
-
-module.exports = askGemini;
+# أمر التشغيل
+CMD bash -c "vncserver :1 -geometry 1280x800 -depth 24 && \
+             /opt/noVNC/utils/launch.sh --vnc localhost:5901 --listen 8080"
